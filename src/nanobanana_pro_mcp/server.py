@@ -11,19 +11,18 @@ from pathlib import Path
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
-from openai import OpenAI
+import google.generativeai as genai
 from PIL import Image
 
-# Global client and config
-_client: OpenAI | None = None
-_model: str = "gemini-3-pro-image"
+# Global model instance
+_model: genai.GenerativeModel | None = None
 
 
-def get_client() -> OpenAI:
-    """Get the configured OpenAI client."""
-    if _client is None:
-        raise RuntimeError("Client not initialized. Ensure --api-key and --base-url are provided.")
-    return _client
+def get_model() -> genai.GenerativeModel:
+    """Get the configured GenerativeModel instance."""
+    if _model is None:
+        raise RuntimeError("Model not initialized. Ensure --api-key and --base-url are provided.")
+    return _model
 
 
 # Aspect ratio detection keywords
@@ -344,43 +343,51 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         # Detect aspect ratio
         size = detect_aspect_ratio(prompt)
 
-        # Generate image
-        client = get_client()
-        response = client.chat.completions.create(
-            model=_model,
-            extra_body={"size": size},
-            messages=[{"role": "user", "content": prompt}]
-        )
+        # Generate image using GenerativeModel
+        model = get_model()
+        response = model.generate_content(prompt)
 
-        # Get the response content (base64 image or URL)
-        content = response.choices[0].message.content
-
-        # Create temp file
+        # Handle the response - extract image from parts
+        temp_path = None
         suggested_name = extract_filename_from_prompt(prompt)
         temp_dir = tempfile.gettempdir()
         temp_path = Path(temp_dir) / f"{suggested_name}.png"
 
-        # Handle response - could be base64 or URL
-        if content.startswith("data:image"):
-            # Base64 data URL
-            header, data = content.split(",", 1)
-            image_data = base64.b64decode(data)
-            temp_path.write_bytes(image_data)
-        elif content.startswith("http"):
-            # URL - download it
-            import urllib.request
-            urllib.request.urlretrieve(content, temp_path)
+        # Check response parts for image data
+        if response.parts:
+            for part in response.parts:
+                if hasattr(part, 'inline_data') and part.inline_data is not None:
+                    # Save image data directly
+                    image_data = part.inline_data.data
+                    temp_path.write_bytes(image_data)
+                    break
+                elif hasattr(part, 'text') and part.text:
+                    content = part.text
+                    # Handle text response - could be base64 or URL
+                    if content.startswith("data:image"):
+                        # Base64 data URL
+                        header, data = content.split(",", 1)
+                        image_data = base64.b64decode(data)
+                        temp_path.write_bytes(image_data)
+                    elif content.startswith("http"):
+                        # URL - download it
+                        import urllib.request
+                        urllib.request.urlretrieve(content, temp_path)
+                    else:
+                        # Assume raw base64
+                        try:
+                            image_data = base64.b64decode(content)
+                            temp_path.write_bytes(image_data)
+                        except Exception:
+                            return [TextContent(
+                                type="text",
+                                text=f"Unexpected response from image API: {content[:200]}..."
+                            )]
         else:
-            # Assume raw base64
-            try:
-                image_data = base64.b64decode(content)
-                temp_path.write_bytes(image_data)
-            except Exception:
-                # Maybe it's a file path or error message
-                return [TextContent(
-                    type="text",
-                    text=f"Unexpected response from image API: {content[:200]}..."
-                )]
+            return [TextContent(
+                type="text",
+                text="No image was generated in the response."
+            )]
 
         return [TextContent(
             type="text",
@@ -468,7 +475,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
 
 def main():
     """Main entry point."""
-    global _client, _model
+    global _model
 
     parser = argparse.ArgumentParser(description="Nano Banana Pro MCP Server")
     parser.add_argument("--api-key", required=True, help="API key for the image generation service")
@@ -477,12 +484,15 @@ def main():
 
     args = parser.parse_args()
 
-    # Initialize client
-    _client = OpenAI(
+    # Configure the genai library with custom endpoint
+    genai.configure(
         api_key=args.api_key,
-        base_url=args.base_url
+        transport='rest',
+        client_options={'api_endpoint': args.base_url}
     )
-    _model = args.model
+
+    # Initialize model
+    _model = genai.GenerativeModel(args.model)
 
     # Run server
     async def run():
