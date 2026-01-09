@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nanobanana-pro-mcp"
+version = "0.1.0"
+description = "Nano Banana Pro Image Generation for Claude Code - MCP server for automatic image generation, conversion, and smart asset placement"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "ruzgar" }
+]
+keywords = ["mcp", "claude", "image-generation", "ai", "assets"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "mcp>=1.0.0",
+    "openai>=1.0.0",
+    "Pillow>=10.0.0",
+]
+
+[project.scripts]
+nanobanana-pro-mcp = "nanobanana_pro_mcp.server:main"
+
+[project.urls]
+Homepage = "https://github.com/ruzgar/nanobanana-pro-mcp"
+Repository = "https://github.com/ruzgar/nanobanana-pro-mcp"
+Issues = "https://github.com/ruzgar/nanobanana-pro-mcp/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nanobanana_pro_mcp"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/README.md",
+    "/LICENSE",
+]
