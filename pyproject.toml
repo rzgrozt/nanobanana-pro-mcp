@@ -32,9 +32,9 @@ dependencies = [
 nanobanana-pro-mcp = "nanobanana_pro_mcp.server:main"
 
 [project.urls]
-Homepage = "https://github.com/ruzgar/nanobanana-pro-mcp"
-Repository = "https://github.com/ruzgar/nanobanana-pro-mcp"
-Issues = "https://github.com/ruzgar/nanobanana-pro-mcp/issues"
+Homepage = "https://github.com/rzgrozt/nanobanana-pro-mcp"
+Repository = "https://github.com/rzgrozt/nanobanana-pro-mcp"
+Issues = "https://github.com/rzgrozt/nanobanana-pro-mcp/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/nanobanana_pro_mcp"]

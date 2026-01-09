@@ -122,7 +122,7 @@ The MCP will:
 ### Local Setup
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/nanobanana-pro-mcp.git
+git clone https://github.com/rzgrozt/nanobanana-pro-mcp.git
 cd nanobanana-pro-mcp
 
 # Create virtual environment
