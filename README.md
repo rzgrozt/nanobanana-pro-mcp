@@ -27,6 +27,16 @@ An MCP (Model Context Protocol) server that provides AI-powered image generation
 
 ## Installation
 
+### From PyPI (Recommended)
+
+```bash
+# Using uv (recommended)
+uv pip install nanobanana-pro-mcp
+
+# Or using pip
+pip install nanobanana-pro-mcp
+```
+
 ### Prerequisites
 
 - Python 3.10+
